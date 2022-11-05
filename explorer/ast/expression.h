@@ -738,6 +738,11 @@ class ValueLiteral : public ConstantValueLiteral {
 class IntrinsicExpression : public Expression {
  public:
   enum class Intrinsic {
+    Open,
+    Read,
+    Write,
+    ArrToString,
+    Close,
     Print,
     Alloc,
     Dealloc,

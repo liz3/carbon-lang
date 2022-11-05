@@ -492,6 +492,7 @@ class TupleValueBase : public Value {
     return elements_;
   }
 
+  std::vector<Nonnull<const Value*>>& elements() { return elements_; }
   static auto classof(const Value* value) -> bool {
     return value->kind() == Kind::TupleValue ||
            value->kind() == Kind::TupleType;

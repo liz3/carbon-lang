@@ -26,6 +26,21 @@ auto IntrinsicExpression::FindIntrinsic(std::string_view name,
   if (name == "Print") {
     return Intrinsic::Print;
   }
+  if (name == "Open") {
+    return Intrinsic::Open;
+  }
+  if (name == "Write") {
+    return Intrinsic::Write;
+  }
+  if (name == "Read") {
+    return Intrinsic::Read;
+  }
+  if (name == "Close") {
+    return Intrinsic::Close;
+  }
+  if (name == "ArrToString") {
+    return Intrinsic::ArrToString;
+  }
   static const auto& intrinsic_map = *new std::map<std::string_view, Intrinsic>(
       {{"print", Intrinsic::Print},
        {"new", Intrinsic::Alloc},
@@ -55,6 +70,17 @@ auto IntrinsicExpression::name() const -> std::string_view {
     case IntrinsicExpression::Intrinsic::Print:
       // TODO: Remove Print special casing once we have variadics or overloads.
       return "Print";
+
+    case IntrinsicExpression::Intrinsic::ArrToString:
+      return "ArrToString";
+    case IntrinsicExpression::Intrinsic::Open:
+      return "Open";
+    case IntrinsicExpression::Intrinsic::Read:
+      return "Read";
+    case IntrinsicExpression::Intrinsic::Write:
+      return "Write";
+    case IntrinsicExpression::Intrinsic::Close:
+      return "Close";
     case IntrinsicExpression::Intrinsic::Alloc:
       return "__intrinsic_new";
     case IntrinsicExpression::Intrinsic::Dealloc:

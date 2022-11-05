@@ -4,8 +4,11 @@
 
 #include "explorer/interpreter/interpreter.h"
 
+#include <fcntl.h>
 #include <llvm/Support/raw_ostream.h>
+#include <unistd.h>
 
+#include <iostream>
 #include <iterator>
 #include <map>
 #include <optional>
@@ -1292,6 +1295,77 @@ auto Interpreter::StepExp() -> ErrorOr<Success> {
           // Implicit newline; currently no way to disable it.
           llvm::outs() << "\n";
           return todo_.FinishAction(TupleValue::Empty());
+        }
+        case IntrinsicExpression::Intrinsic::Read: {
+          const auto& tuples = cast<TupleValue>(*args[1]);
+          auto& tuples_test = const_cast<TupleValue&>(tuples);
+          CARBON_ASSIGN_OR_RETURN(
+              [[maybe_unused]] Nonnull<const Value*> fid,
+              Convert(args[0], arena_->New<IntType>(), exp.source_loc()));
+          size_t length = tuples.elements().size();
+          int fid_number = cast<IntValue>(*fid).value();
+          uint8_t arr[length];
+          size_t out_length = read(fid_number, arr, length);
+          if (out_length > 0) {
+            // tuples.elements.clear();
+            // std::vector<Nonnull<const Value*>>& els =
+            // tuples_ptr->elements_mut();
+            for (size_t i = 0; i < out_length; i++) {
+              uint8_t byte = arr[i];
+              if (tuples.elements()[i]->kind() == Value::Kind::IntValue) {
+                SizedTypesType type =
+                    cast<IntValue>(*(tuples.elements()[i])).type();
+                tuples_test.elements()[i] =
+                    arena_->New<IntValue>(static_cast<int>(byte), type);
+              }
+            }
+          }
+          return todo_.FinishAction(arena_->New<IntValue>(out_length));
+        }
+        case IntrinsicExpression::Intrinsic::ArrToString: {
+          const auto& tuples = cast<TupleValue>(*args[0]);
+          std::string converted_value;
+          for (const auto& entry : tuples.elements()) {
+            const IntValue& int_value = cast<IntValue>(*entry);
+            converted_value += static_cast<uint8_t>(int_value.value());
+          }
+          return todo_.FinishAction(arena_->New<StringValue>(converted_value));
+        }
+        case IntrinsicExpression::Intrinsic::Open: {
+          CARBON_ASSIGN_OR_RETURN(
+              Nonnull<const Value*> path_str,
+              Convert(args[0], arena_->New<StringType>(), exp.source_loc()));
+          std::string val = cast<StringValue>(path_str)->value();
+          int fid = open(val.c_str(), O_RDWR | O_CREAT, 0666);
+          return todo_.FinishAction(arena_->New<IntValue>(fid));
+        }
+        case IntrinsicExpression::Intrinsic::Write: {
+          CARBON_ASSIGN_OR_RETURN(
+              [[maybe_unused]] Nonnull<const Value*> fid,
+              Convert(args[0], arena_->New<IntType>(), exp.source_loc()));
+          CARBON_ASSIGN_OR_RETURN(
+              [[maybe_unused]] Nonnull<const Value*> length,
+              Convert(args[2], arena_->New<IntType>(), exp.source_loc()));
+          int fid_number = cast<IntValue>(*fid).value();
+          int len = cast<IntValue>(*length).value();
+          const auto& tuples = cast<TupleValue>(*args[1]);
+          std::string converted_value;
+          for (int i = 0; i < len; i++) {
+            const auto* entry = tuples.elements()[i];
+            const IntValue& int_value = cast<IntValue>(*entry);
+            converted_value += static_cast<uint8_t>(int_value.value());
+          }
+          size_t out = write(fid_number, converted_value.c_str(),
+                             converted_value.length());
+          return todo_.FinishAction(arena_->New<IntValue>(out));
+        }
+        case IntrinsicExpression::Intrinsic::Close: {
+          CARBON_ASSIGN_OR_RETURN(
+              [[maybe_unused]] Nonnull<const Value*> fid,
+              Convert(args[0], arena_->New<IntType>(), exp.source_loc()));
+          int fid_number = cast<IntValue>(*fid).value();
+          int out = close(fid_number);
+          return todo_.FinishAction(arena_->New<IntValue>(out));
         }
         case IntrinsicExpression::Intrinsic::Assert: {
           CARBON_CHECK(args.size() == 2);

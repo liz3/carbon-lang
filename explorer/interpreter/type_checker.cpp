@@ -3277,6 +3277,58 @@ auto TypeChecker::TypeCheckExp(Nonnull<Expression*> e,
           e->set_static_type(TupleType::Empty());
           e->set_value_category(ValueCategory::Let);
           return Success();
+        case IntrinsicExpression::Intrinsic::Open:
+          if (args.empty() || args.size() != 1) {
+            return ProgramError(e->source_loc())
+                   << "Open takes 1 argument, received " << args.size();
+          }
+          CARBON_RETURN_IF_ERROR(ExpectExactType(
+              e->source_loc(), "Open argument 0", arena_->New<StringType>(),
+              &args[0]->static_type(), impl_scope));
+          e->set_static_type(arena_->New<IntType>());
+          // e->set_value_category(ValueCategory::Let);
+          return Success();
+        case IntrinsicExpression::Intrinsic::Close:
+          if (args.empty() || args.size() != 1) {
+            return ProgramError(e->source_loc())
+                   << "Read takes 2 argument, received " << args.size();
+          }
+          CARBON_RETURN_IF_ERROR(ExpectExactType(
+              e->source_loc(), "Read argument 0", arena_->New<IntType>(),
+              &args[0]->static_type(), impl_scope));
+          e->set_static_type(TupleType::Empty());
+          e->set_value_category(ValueCategory::Let);
+          return Success();
+        case IntrinsicExpression::Intrinsic::Write:
+          if (args.empty() || args.size() != 3) {
+            return ProgramError(e->source_loc())
+                   << "Read takes 2 argument, received " << args.size();
+          }
+          CARBON_RETURN_IF_ERROR(ExpectExactType(
+              e->source_loc(), "Read argument 0", arena_->New<IntType>(),
+              &args[0]->static_type(), impl_scope));
+          e->set_static_type(TupleType::Empty());
+          e->set_value_category(ValueCategory::Let);
+          return Success();
+        case IntrinsicExpression::Intrinsic::ArrToString:
+          if (args.empty() || args.size() != 1) {
+            return ProgramError(e->source_loc())
+                   << "Read takes 2 argument, received " << args.size();
+          }
+          e->set_static_type(arena_->New<StringType>());
+          e->set_value_category(ValueCategory::Let);
+          return Success();
+        case IntrinsicExpression::Intrinsic::Read:
+          if (args.empty() || args.size() != 2) {
+            return ProgramError(e->source_loc())
+                   << "Read takes 2 argument, received " << args.size();
+          }
+          CARBON_RETURN_IF_ERROR(ExpectExactType(
+              e->source_loc(), "Read argument 0", arena_->New<IntType>(),
+              &args[0]->static_type(), impl_scope));
+          e->set_static_type(arena_->New<IntType>());
+          e->set_value_category(ValueCategory::Let);
+          return Success();
         case IntrinsicExpression::Intrinsic::Assert: {
           if (args.size() != 2) {
             return ProgramError(e->source_loc())
